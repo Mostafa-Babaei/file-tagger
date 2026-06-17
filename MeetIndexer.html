@@ -3,9 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>آرشیو جلسات</title>
+  <title>File Tagger - آرشیو فایل‌ها</title>
   <!-- فونت Vazirmatn از CDN -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/persian-datepicker@1.2.0/dist/css/persian-datepicker.min.css">
   <style>
     * {
       margin: 0;
@@ -460,6 +461,22 @@
     .quick-tag-wrap { display:inline-flex; gap:5px; align-items:center; }
     .quick-tag-input { width:120px; padding:6px 8px; border:1px solid #cbd5e1; border-radius:999px; font-family:inherit; }
     .quick-tag-add { border:1px dashed #2563eb; background:#fff; color:#2563eb; border-radius:999px; cursor:pointer; padding:5px 9px; }
+    .modal-top-actions {
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      display: flex;
+      gap: 10px;
+      justify-content: flex-start;
+      padding: 12px 0 16px;
+      margin-bottom: 10px;
+      background: white;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .persian-date-input {
+      cursor: pointer;
+      background: #fff;
+    }
   </style>
 </head>
 <body>
@@ -517,6 +534,10 @@
     <div class="modal">
       <h2 id="modalTitle">افزودن فایل</h2>
       <form id="meetingForm">
+        <div class="modal-top-actions">
+          <button type="submit" class="btn btn-success" id="saveMeetingBtn">ذخیره</button>
+          <button type="button" class="btn btn-danger" id="cancelModalBtn">انصراف</button>
+        </div>
         <div class="form-group">
           <label>انتخاب فایل</label>
           <input type="file" id="filePicker" accept="*/*">
@@ -532,14 +553,8 @@
         </div>
         <div class="form-row">
           <div class="form-group">
-            <label>تاریخ شمسی</label>
-            <div class="jalali-picker" aria-label="انتخاب تاریخ شمسی">
-              <select id="jalaliYear" title="سال"></select>
-              <select id="jalaliMonth" title="ماه"></select>
-              <select id="jalaliDay" title="روز"></select>
-              <button type="button" class="btn-icon" id="clearJalaliDate">پاک کردن</button>
-            </div>
-            <input type="hidden" id="meetingDate">
+            <label for="meetingDate">تاریخ شمسی</label>
+            <input type="text" id="meetingDate" class="persian-date-input" placeholder="برای انتخاب تاریخ کلیک کنید" autocomplete="off" inputmode="numeric">
           </div>
           <div class="form-group">
             <label>دسته‌بندی / موضوع</label>
@@ -560,10 +575,6 @@
         <div class="form-group">
           <label>افراد مرتبط (با ویرگول جدا کنید)</label>
           <input type="text" id="participants" placeholder="نام افراد مرتبط">
-        </div>
-        <div class="modal-actions">
-          <button type="button" class="btn btn-danger" id="cancelModalBtn">انصراف</button>
-          <button type="submit" class="btn btn-success" id="saveMeetingBtn">ذخیره</button>
         </div>
       </form>
     </div>
@@ -697,10 +708,6 @@
     const filePath = $('filePath');
     const title = $('title');
     const meetingDate = $('meetingDate');
-    const jalaliYear = $('jalaliYear');
-    const jalaliMonth = $('jalaliMonth');
-    const jalaliDay = $('jalaliDay');
-    const clearJalaliDate = $('clearJalaliDate');
     const project = $('project');
     const description = $('description');
     const tagInput = $('tagInput');
@@ -781,41 +788,6 @@
       const parts = new Intl.DateTimeFormat('fa-IR-u-ca-persian-nu-latn', { year:'numeric', month:'numeric', day:'numeric' }).formatToParts(new Date());
       const get = type => Number(parts.find(p => p.type === type)?.value || 0);
       return { year:get('year'), month:get('month'), day:get('day') };
-    }
-
-    function setupJalaliPicker() {
-      const now = getCurrentJalaliParts();
-      jalaliYear.innerHTML = '<option value="">سال</option>';
-      for (let y = now.year + 2; y >= 1300; y--) jalaliYear.add(new Option(String(y), String(y)));
-      const monthNames = ['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
-      jalaliMonth.innerHTML = '<option value="">ماه</option>';
-      monthNames.forEach((name, i) => jalaliMonth.add(new Option(name, String(i + 1))));
-      updateJalaliDays();
-    }
-
-    function updateJalaliDays() {
-      const selected = jalaliDay.value;
-      const month = Number(jalaliMonth.value || 0);
-      const max = month === 0 ? 31 : month <= 6 ? 31 : 30;
-      jalaliDay.innerHTML = '<option value="">روز</option>';
-      for (let d = 1; d <= max; d++) jalaliDay.add(new Option(String(d), String(d)));
-      if (Number(selected) <= max) jalaliDay.value = selected;
-      syncJalaliHiddenValue();
-    }
-
-    function syncJalaliHiddenValue() {
-      const y = jalaliYear.value, m = jalaliMonth.value, d = jalaliDay.value;
-      meetingDate.value = y && m && d ? `${y}/${String(m).padStart(2,'0')}/${String(d).padStart(2,'0')}` : '';
-    }
-
-    function setJalaliPickerValue(value) {
-      const normalized = normalizeJalaliDate(value);
-      const parts = normalized ? normalized.split('/').map(Number) : ['', '', ''];
-      jalaliYear.value = parts[0] || '';
-      jalaliMonth.value = parts[1] || '';
-      updateJalaliDays();
-      jalaliDay.value = parts[2] || '';
-      syncJalaliHiddenValue();
     }
 
     function getPersianMonth(dateStr) {
@@ -1007,7 +979,7 @@
       fileInfo.textContent = 'فایلی انتخاب نشده';
       filePath.value = meeting ? meeting.filePath || '' : '';
       title.value = meeting ? meeting.title : '';
-      setJalaliPickerValue(meeting ? (meeting.meetingDate || '') : '');
+      meetingDate.value = meeting ? (meeting.meetingDate || '') : '';
       project.value = meeting ? meeting.project || '' : '';
       description.value = meeting ? meeting.description || '' : '';
       participants.value = meeting ? (meeting.participants || []).join('، ') : '';
@@ -1071,12 +1043,6 @@
       // برای نمایش، path رو همان fake می‌ذاریم ولی کاربر می‌تونه دستی ویرایش کنه
       if (!filePath.value) filePath.value = fakePath;
     });
-
-    setupJalaliPicker();
-    jalaliYear.addEventListener('change', syncJalaliHiddenValue);
-    jalaliMonth.addEventListener('change', updateJalaliDays);
-    jalaliDay.addEventListener('change', syncJalaliHiddenValue);
-    clearJalaliDate.addEventListener('click', () => setJalaliPickerValue(''));
 
     // ذخیره فرم
     document.getElementById('meetingForm').addEventListener('submit', async (e) => {
@@ -1261,5 +1227,25 @@
     showToast('لطفاً فایل meetings.json را انتخاب کنید', 'success');
   })();
 </script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/persian-date@1.1.0/dist/persian-date.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/persian-datepicker@1.2.0/dist/js/persian-datepicker.min.js"></script>
+  <script>
+    window.addEventListener('load', function () {
+      if (window.jQuery && jQuery.fn.persianDatepicker) {
+        jQuery('#meetingDate').persianDatepicker({
+          format: 'YYYY/MM/DD',
+          autoClose: true,
+          initialValue: false,
+          observer: true,
+          calendar: { persian: { locale: 'fa' } },
+          toolbox: { calendarSwitch: { enabled: false } },
+          navigator: { scroll: { enabled: false } }
+        });
+      } else {
+        console.warn('Persian Datepicker library could not be loaded.');
+      }
+    });
+  </script>
 </body>
 </html>

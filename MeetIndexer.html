@@ -450,6 +450,16 @@
       .modal { padding: 20px; }
       .filters { border-radius: 24px; }
     }
+
+    .jalali-picker { display:grid; grid-template-columns:1fr 1fr 1fr auto; gap:8px; align-items:center; }
+    .jalali-picker select { width:100%; padding:10px 8px; border:1px solid #cbd5e1; border-radius:10px; background:#fff; font-family:inherit; }
+    .card-tag-manager { display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin:8px 0; }
+    .card-tag { display:inline-flex; align-items:center; gap:5px; background:#e8f0fe; color:#234; padding:5px 9px; border-radius:999px; font-size:.78rem; }
+    .card-tag-name { cursor:pointer; }
+    .card-tag-remove { border:0; background:transparent; color:#b42318; cursor:pointer; padding:0; font:inherit; }
+    .quick-tag-wrap { display:inline-flex; gap:5px; align-items:center; }
+    .quick-tag-input { width:120px; padding:6px 8px; border:1px solid #cbd5e1; border-radius:999px; font-family:inherit; }
+    .quick-tag-add { border:1px dashed #2563eb; background:#fff; color:#2563eb; border-radius:999px; cursor:pointer; padding:5px 9px; }
   </style>
 </head>
 <body>
@@ -458,16 +468,15 @@
   <header class="header">
     <div class="header-right">
       <div>
-        <h1>📁 آرشیو جلسات</h1>
-        <div class="sub">ثبت، دسته‌بندی و جست‌وجوی فایل‌های جلسات</div>
+        <h1>📁 آرشیو فایل‌ها</h1>
+        <div class="sub">ثبت، دسته‌بندی و جست‌وجوی فایل‌های مختلف</div>
       </div>
     </div>
     <div class="header-actions">
       <span class="file-status" id="fileStatus"><span class="dot off"></span> هیچ فایل اطلاعاتی انتخاب نشده</span>
       <button class="btn btn-primary" id="openFileBtn">📂 انتخاب فایل اطلاعات</button>
-      <button class="btn btn-outline" id="createFileBtn">✨ ساخت فایل JSON جدید</button>
       <button class="btn btn-outline" id="backupBtn">💾 دریافت پشتیبان</button>
-      <button class="btn btn-success" id="addMeetingBtn">➕ افزودن جلسه</button>
+      <button class="btn btn-success" id="addMeetingBtn">➕ افزودن فایل</button>
     </div>
   </header>
 
@@ -479,9 +488,9 @@
 
   <!-- داشبورد -->
   <div class="dashboard" id="dashboard">
-    <div class="stat-card"><div class="num" id="totalMeetings">0</div><div class="label">کل جلسات</div></div>
+    <div class="stat-card"><div class="num" id="totalMeetings">0</div><div class="label">کل فایل‌ها</div></div>
     <div class="stat-card"><div class="num" id="totalTags">0</div><div class="label">تعداد تگ‌ها</div></div>
-    <div class="stat-card"><div class="num" id="thisMonth">0</div><div class="label">جلسات این ماه</div></div>
+    <div class="stat-card"><div class="num" id="thisMonth">0</div><div class="label">فایل‌های این ماه</div></div>
     <div class="stat-card"><div class="num" id="noDesc">0</div><div class="label">بدون توضیحات</div></div>
   </div>
 
@@ -500,16 +509,16 @@
     </div>
   </div>
 
-  <!-- لیست جلسات -->
+  <!-- لیست فایل‌ها -->
   <div id="meetingList" class="meeting-list"></div>
 
   <!-- مودال فرم -->
   <div class="modal-overlay" id="modalOverlay">
     <div class="modal">
-      <h2 id="modalTitle">افزودن جلسه</h2>
+      <h2 id="modalTitle">افزودن فایل</h2>
       <form id="meetingForm">
         <div class="form-group">
-          <label>انتخاب فایل جلسه</label>
+          <label>انتخاب فایل</label>
           <input type="file" id="filePicker" accept="*/*">
           <div style="font-size:0.8rem;color:#4f657f;margin-top:4px;" id="fileInfo">فایلی انتخاب نشده</div>
         </div>
@@ -518,22 +527,28 @@
           <input type="text" id="filePath" placeholder="مثلاً D:\\Meetings\\meeting.mp4">
         </div>
         <div class="form-group">
-          <label>عنوان جلسه *</label>
-          <input type="text" id="title" placeholder="عنوان جلسه" required>
+          <label>عنوان *</label>
+          <input type="text" id="title" placeholder="عنوان یا نام دلخواه" required>
         </div>
         <div class="form-row">
           <div class="form-group">
-            <label>تاریخ جلسه</label>
-            <input type="date" id="meetingDate">
+            <label>تاریخ شمسی</label>
+            <div class="jalali-picker" aria-label="انتخاب تاریخ شمسی">
+              <select id="jalaliYear" title="سال"></select>
+              <select id="jalaliMonth" title="ماه"></select>
+              <select id="jalaliDay" title="روز"></select>
+              <button type="button" class="btn-icon" id="clearJalaliDate">پاک کردن</button>
+            </div>
+            <input type="hidden" id="meetingDate">
           </div>
           <div class="form-group">
-            <label>پروژه / سامانه</label>
-            <input type="text" id="project" placeholder="نام پروژه">
+            <label>دسته‌بندی / موضوع</label>
+            <input type="text" id="project" placeholder="مثلاً مستندات، قراردادها، پروژه الف">
           </div>
         </div>
         <div class="form-group">
           <label>توضیحات</label>
-          <textarea id="description" rows="3" placeholder="توضیحات جلسه"></textarea>
+          <textarea id="description" rows="3" placeholder="توضیحات فایل"></textarea>
         </div>
         <div class="form-group">
           <label>تگ‌ها (Enter یا ویرگول)</label>
@@ -543,8 +558,8 @@
           </div>
         </div>
         <div class="form-group">
-          <label>شرکت‌کنندگان (با ویرگول جدا کنید)</label>
-          <input type="text" id="participants" placeholder="علی، محمد، سارا">
+          <label>افراد مرتبط (با ویرگول جدا کنید)</label>
+          <input type="text" id="participants" placeholder="نام افراد مرتبط">
         </div>
         <div class="modal-actions">
           <button type="button" class="btn btn-danger" id="cancelModalBtn">انصراف</button>
@@ -558,7 +573,7 @@
   <div class="modal-overlay" id="confirmModal">
     <div class="modal" style="max-width:400px;">
       <h3>⚠️ تأیید حذف</h3>
-      <p style="margin:16px 0;">آیا از حذف این جلسه مطمئن هستید؟</p>
+      <p style="margin:16px 0;">آیا از حذف این فایل مطمئن هستید؟</p>
       <div class="modal-actions">
         <button class="btn btn-outline" id="cancelConfirmBtn">انصراف</button>
         <button class="btn btn-danger" id="confirmDeleteBtn">حذف</button>
@@ -682,6 +697,10 @@
     const filePath = $('filePath');
     const title = $('title');
     const meetingDate = $('meetingDate');
+    const jalaliYear = $('jalaliYear');
+    const jalaliMonth = $('jalaliMonth');
+    const jalaliDay = $('jalaliDay');
+    const clearJalaliDate = $('clearJalaliDate');
     const project = $('project');
     const description = $('description');
     const tagInput = $('tagInput');
@@ -746,24 +765,62 @@
       return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
     }
 
-    function formatDateForDisplay(dateStr) {
-      if (!dateStr) return '';
-      try {
-        const d = new Date(dateStr);
-        return d.toLocaleDateString('fa-IR');
-      } catch { return dateStr; }
+    function normalizeJalaliDate(value) {
+      const match = String(value || '').trim().match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})$/);
+      if (!match) return '';
+      const y = Number(match[1]), m = Number(match[2]), d = Number(match[3]);
+      if (y < 1200 || y > 1600 || m < 1 || m > 12 || d < 1 || d > 31 || (m > 6 && d > 30)) return '';
+      return `${y}/${String(m).padStart(2,'0')}/${String(d).padStart(2,'0')}`;
     }
 
-    function getCurrentDateISO() {
-      return new Date().toISOString().slice(0,10);
+    function formatDateForDisplay(dateStr) {
+      return normalizeJalaliDate(dateStr) || String(dateStr || '');
+    }
+
+    function getCurrentJalaliParts() {
+      const parts = new Intl.DateTimeFormat('fa-IR-u-ca-persian-nu-latn', { year:'numeric', month:'numeric', day:'numeric' }).formatToParts(new Date());
+      const get = type => Number(parts.find(p => p.type === type)?.value || 0);
+      return { year:get('year'), month:get('month'), day:get('day') };
+    }
+
+    function setupJalaliPicker() {
+      const now = getCurrentJalaliParts();
+      jalaliYear.innerHTML = '<option value="">سال</option>';
+      for (let y = now.year + 2; y >= 1300; y--) jalaliYear.add(new Option(String(y), String(y)));
+      const monthNames = ['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
+      jalaliMonth.innerHTML = '<option value="">ماه</option>';
+      monthNames.forEach((name, i) => jalaliMonth.add(new Option(name, String(i + 1))));
+      updateJalaliDays();
+    }
+
+    function updateJalaliDays() {
+      const selected = jalaliDay.value;
+      const month = Number(jalaliMonth.value || 0);
+      const max = month === 0 ? 31 : month <= 6 ? 31 : 30;
+      jalaliDay.innerHTML = '<option value="">روز</option>';
+      for (let d = 1; d <= max; d++) jalaliDay.add(new Option(String(d), String(d)));
+      if (Number(selected) <= max) jalaliDay.value = selected;
+      syncJalaliHiddenValue();
+    }
+
+    function syncJalaliHiddenValue() {
+      const y = jalaliYear.value, m = jalaliMonth.value, d = jalaliDay.value;
+      meetingDate.value = y && m && d ? `${y}/${String(m).padStart(2,'0')}/${String(d).padStart(2,'0')}` : '';
+    }
+
+    function setJalaliPickerValue(value) {
+      const normalized = normalizeJalaliDate(value);
+      const parts = normalized ? normalized.split('/').map(Number) : ['', '', ''];
+      jalaliYear.value = parts[0] || '';
+      jalaliMonth.value = parts[1] || '';
+      updateJalaliDays();
+      jalaliDay.value = parts[2] || '';
+      syncJalaliHiddenValue();
     }
 
     function getPersianMonth(dateStr) {
-      if (!dateStr) return '';
-      try {
-        const d = new Date(dateStr);
-        return d.getMonth() + 1;
-      } catch { return ''; }
+      const normalized = normalizeJalaliDate(dateStr);
+      return normalized ? Number(normalized.split('/')[1]) : '';
     }
 
     // ------------------------------------------------------------
@@ -799,11 +856,12 @@
       const total = dbData.meetings.length;
       const tagSet = new Set();
       dbData.meetings.forEach(m => (m.tags || []).forEach(t => tagSet.add(t)));
-      const now = new Date();
+      const nowJalali = getCurrentJalaliParts();
       const thisMonthCount = dbData.meetings.filter(m => {
-        if (!m.meetingDate) return false;
-        const d = new Date(m.meetingDate);
-        return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+        const normalized = normalizeJalaliDate(m.meetingDate);
+        if (!normalized) return false;
+        const [year, month] = normalized.split('/').map(Number);
+        return year === nowJalali.year && month === nowJalali.month;
       }).length;
       const noDescCount = dbData.meetings.filter(m => !m.description || m.description.trim() === '').length;
 
@@ -817,9 +875,9 @@
         meetingListEl.innerHTML = `
           <div class="empty-state" style="grid-column:1/-1;">
             <div class="icon">📂</div>
-            <h3>هیچ جلسه‌ای یافت نشد</h3>
-            <p style="color:#7a8da0;">با دکمه افزودن جلسه، اولین جلسه را ثبت کنید</p>
-            <button class="btn btn-primary" style="margin-top:16px;" id="emptyAddBtn">➕ افزودن جلسه</button>
+            <h3>هیچ فایلی یافت نشد</h3>
+            <p style="color:#7a8da0;">با دکمه افزودن فایل، اولین جلسه را ثبت کنید</p>
+            <button class="btn btn-primary" style="margin-top:16px;" id="emptyAddBtn">➕ افزودن فایل</button>
           </div>
         `;
         const emptyAdd = document.getElementById('emptyAddBtn');
@@ -832,7 +890,7 @@
         const ext = m.fileExtension || '';
         const icon = getFileIcon(ext);
         const size = formatFileSize(m.fileSize);
-        const tags = (m.tags || []).map(t => `<span class="tag">${escapeHtml(t)}</span>`).join('');
+        const tags = (m.tags || []).map(t => `<span class="card-tag"><span class="card-tag-name" data-tag-filter="${escapeHtml(t)}">${escapeHtml(t)}</span><button type="button" class="card-tag-remove" data-id="${escapeHtml(m.id)}" data-tag="${escapeHtml(t)}" title="حذف تگ">×</button></span>`).join('');
         const participantsList = (m.participants || []).map(p => `<span class="tag" style="background:#dbeafe;">${escapeHtml(p)}</span>`).join('');
         const desc = m.description ? escapeHtml(m.description) : '';
         html += `
@@ -848,7 +906,7 @@
             </div>
             ${m.project ? `<div style="font-size:0.8rem;color:#2563eb;">🏷️ ${escapeHtml(m.project)}</div>` : ''}
             ${desc ? `<div class="card-desc">${desc}</div>` : ''}
-            ${tags ? `<div class="tags">${tags}</div>` : ''}
+            <div class="card-tag-manager">${tags}<span class="quick-tag-wrap"><input class="quick-tag-input" data-id="${escapeHtml(m.id)}" placeholder="تگ جدید"><button type="button" class="quick-tag-add" data-id="${escapeHtml(m.id)}">+</button></span></div>
             ${participantsList ? `<div style="display:flex;flex-wrap:wrap;gap:4px;margin:4px 0;">${participantsList}</div>` : ''}
             <div class="card-actions">
               <button class="btn-icon edit-btn" data-id="${escapeHtml(m.id)}">✏️ ویرایش</button>
@@ -878,9 +936,58 @@
           }
         };
       });
+      document.querySelectorAll('.quick-tag-add').forEach(btn => {
+        btn.onclick = async () => {
+          const input = document.querySelector(`.quick-tag-input[data-id="${CSS.escape(btn.dataset.id)}"]`);
+          await addTagFromCard(btn.dataset.id, input ? input.value : '');
+          if (input) input.value = '';
+        };
+      });
+      document.querySelectorAll('.quick-tag-input').forEach(input => {
+        input.onkeydown = async e => {
+          if (e.key === 'Enter' || e.key === ',') {
+            e.preventDefault();
+            await addTagFromCard(input.dataset.id, input.value);
+            input.value = '';
+          }
+        };
+      });
+      document.querySelectorAll('.card-tag-remove').forEach(btn => {
+        btn.onclick = async e => { e.stopPropagation(); await removeTagFromCard(btn.dataset.id, btn.dataset.tag); };
+      });
+      document.querySelectorAll('[data-tag-filter]').forEach(el => {
+        el.onclick = () => { searchInput.value = el.dataset.tagFilter || ''; render(); };
+      });
+
       document.querySelectorAll('.open-btn').forEach(btn => {
         btn.onclick = () => { showToast('عملکرد باز کردن فایل در نسخه بعدی اضافه می‌شود', 'success'); };
       });
+    }
+
+    async function addTagFromCard(id, rawTag) {
+      const tag = String(rawTag || '').trim().replace(/^,+|,+$/g, '').trim();
+      if (!tag) return;
+      const item = dbData.meetings.find(x => x.id === id);
+      if (!item) return;
+      item.tags = Array.isArray(item.tags) ? item.tags : [];
+      if (item.tags.some(t => t.toLocaleLowerCase('fa') === tag.toLocaleLowerCase('fa'))) {
+        showToast('این تگ قبلاً ثبت شده است', 'error');
+        return;
+      }
+      item.tags.push(tag);
+      item.updatedAt = new Date().toISOString();
+      try { await jsonDatabaseService.save(dbData); showToast('تگ اضافه شد'); render(); }
+      catch (err) { item.tags = item.tags.filter(t => t !== tag); showToast('خطا در ذخیره تگ', 'error'); }
+    }
+
+    async function removeTagFromCard(id, tag) {
+      const item = dbData.meetings.find(x => x.id === id);
+      if (!item) return;
+      const previous = [...(item.tags || [])];
+      item.tags = previous.filter(t => t !== tag);
+      item.updatedAt = new Date().toISOString();
+      try { await jsonDatabaseService.save(dbData); showToast('تگ حذف شد'); render(); }
+      catch (err) { item.tags = previous; showToast('خطا در حذف تگ', 'error'); }
     }
 
     // ------------------------------------------------------------
@@ -893,14 +1000,14 @@
       }
       editingId = meeting ? meeting.id : null;
       currentTags = meeting ? [...(meeting.tags || [])] : [];
-      modalTitle.textContent = meeting ? 'ویرایش جلسه' : 'افزودن جلسه';
+      modalTitle.textContent = meeting ? 'ویرایش فایل' : 'افزودن فایل';
 
       // reset
       filePicker.value = '';
       fileInfo.textContent = 'فایلی انتخاب نشده';
       filePath.value = meeting ? meeting.filePath || '' : '';
       title.value = meeting ? meeting.title : '';
-      meetingDate.value = meeting ? (meeting.meetingDate || '') : '';
+      setJalaliPickerValue(meeting ? (meeting.meetingDate || '') : '');
       project.value = meeting ? meeting.project || '' : '';
       description.value = meeting ? meeting.description || '' : '';
       participants.value = meeting ? (meeting.participants || []).join('، ') : '';
@@ -950,7 +1057,7 @@
       }
     });
 
-    // انتخاب فایل جلسه
+    // انتخاب فایل
     filePicker.addEventListener('change', (e) => {
       const file = e.target.files[0];
       if (!file) return;
@@ -965,6 +1072,12 @@
       if (!filePath.value) filePath.value = fakePath;
     });
 
+    setupJalaliPicker();
+    jalaliYear.addEventListener('change', syncJalaliHiddenValue);
+    jalaliMonth.addEventListener('change', updateJalaliDays);
+    jalaliDay.addEventListener('change', syncJalaliHiddenValue);
+    clearJalaliDate.addEventListener('click', () => setJalaliPickerValue(''));
+
     // ذخیره فرم
     document.getElementById('meetingForm').addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -974,7 +1087,7 @@
       }
       const titleVal = title.value.trim();
       if (!titleVal) {
-        showToast('عنوان جلسه الزامی است', 'error');
+        showToast('عنوان الزامی است', 'error');
         return;
       }
 
@@ -1030,7 +1143,7 @@
           dbData.meetings.push(meetingData);
         }
         await jsonDatabaseService.save(dbData);
-        showToast('جلسه ذخیره شد');
+        showToast('فایل ذخیره شد');
         closeModal();
         render();
       } catch (err) {
@@ -1054,7 +1167,7 @@
       try {
         dbData.meetings = dbData.meetings.filter(m => m.id !== deleteTargetId);
         await jsonDatabaseService.save(dbData);
-        showToast('جلسه حذف شد');
+        showToast('فایل حذف شد');
         deleteTargetId = null;
         confirmModal.classList.remove('open');
         render();

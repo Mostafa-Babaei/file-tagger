@@ -1,0 +1,3 @@
+﻿# Runtime data files
+Data/*.json
+!Data/meetings.json

@@ -26,16 +26,17 @@
     }
     /* هدر */
     .header {
-      background: #0f1a2c;
+      background: linear-gradient(135deg, #0f1a2c 0%, #16253d 100%);
       color: white;
-      padding: 20px 28px;
-      border-radius: 24px;
+      padding: 18px 24px;
+      border-radius: 22px 22px 0 0;
       display: flex;
       flex-wrap: wrap;
       justify-content: space-between;
       align-items: center;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.08);
-      margin-bottom: 24px;
+      gap: 16px;
+      box-shadow: none;
+      margin-bottom: 0;
     }
     .header-right {
       display: flex;
@@ -477,11 +478,71 @@
       cursor: pointer;
       background: #fff;
     }
+    .tag-autocomplete-menu {
+      position: fixed;
+      z-index: 5000;
+      min-width: 180px;
+      max-height: 220px;
+      overflow-y: auto;
+      background: #fff;
+      border: 1px solid #cbd5e1;
+      border-radius: 12px;
+      box-shadow: 0 12px 30px rgba(15,23,42,.16);
+      padding: 6px;
+      display: none;
+    }
+    .tag-autocomplete-menu.show { display: block; }
+    .tag-autocomplete-item {
+      width: 100%;
+      border: 0;
+      background: transparent;
+      text-align: right;
+      font-family: inherit;
+      padding: 8px 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      color: #1e293b;
+    }
+    .tag-autocomplete-item:hover, .tag-autocomplete-item.active { background: #e8f0fe; color: #1d4ed8; }
+    .data-source-bar {
+      display: grid;
+      grid-template-columns: auto minmax(220px, 1fr) auto auto auto;
+      gap: 8px;
+      align-items: center;
+      background: #ffffff;
+      padding: 12px 16px;
+      border-radius: 0 0 22px 22px;
+      border: 1px solid #e2e8f0;
+      border-top: 0;
+      margin-bottom: 18px;
+      box-shadow: 0 10px 24px rgba(15,23,42,.08);
+    }
+    .top-panel { margin-bottom: 18px; }
+    .data-source-bar label { font-weight:700; color:#334155; white-space:nowrap; }
+    .data-source-bar select { width:100%; min-width:0; padding:9px 12px; border:1px solid #cbd5e1; border-radius:10px; font-family:inherit; background:#fff; }
+    .data-source-bar .btn { min-height:42px; padding:9px 16px; border-radius:12px; justify-content:center; white-space:nowrap; box-shadow:none; }
+    .data-source-bar .btn-primary { background:#173f6d; color:#fff; border-color:#173f6d; }
+    .data-source-bar .btn-primary:hover { background:#0f3157; }
+    .data-source-bar .btn-outline { background:#f8fafc; color:#1e3a5f; border:1px solid #9fb2c8; }
+    .data-source-bar .btn-outline:hover { background:#e8f0f8; color:#102a43; border-color:#6f8dab; }
+    .data-source-status { grid-column: 1 / -1; display:flex; align-items:center; gap:8px; color:#64748b; font-size:.84rem; padding-top:4px; border-top:1px dashed #e2e8f0; }
+    .data-source-status .file-status { background:transparent; color:#64748b; padding:0; }
+    @media (max-width: 980px) {
+      .data-source-bar { grid-template-columns: 1fr 1fr; }
+      .data-source-bar label, .data-source-bar select { grid-column: 1 / -1; }
+    }
+    @media (max-width: 620px) {
+      .data-source-bar { grid-template-columns: 1fr; }
+      .data-source-bar > * { width:100%; }
+      .header-actions { width:100%; }
+      .header-actions .btn { flex:1; }
+    }
   </style>
 </head>
 <body>
 <div class="app" id="app">
   <!-- هدر -->
+  <div class="top-panel">
   <header class="header">
     <div class="header-right">
       <div>
@@ -490,12 +551,22 @@
       </div>
     </div>
     <div class="header-actions">
-      <span class="file-status" id="fileStatus"><span class="dot off"></span> هیچ فایل اطلاعاتی انتخاب نشده</span>
-      <button class="btn btn-primary" id="openFileBtn">📂 انتخاب فایل اطلاعات</button>
+      <button class="btn btn-outline" id="openFileBtn" style="display:none;">انتخاب فایل اطلاعات</button>
       <button class="btn btn-outline" id="backupBtn">💾 دریافت پشتیبان</button>
       <button class="btn btn-success" id="addMeetingBtn">➕ افزودن فایل</button>
     </div>
   </header>
+
+  <div class="data-source-bar">
+    <label for="dataFileSelect">فایل داده:</label>
+    <select id="dataFileSelect">
+      <option value="">فایل JSON انتخاب نشده</option>
+    </select>
+    <button type="button" class="btn btn-primary" id="chooseDataFolderBtn">انتخاب پوشه Data</button>
+    <button type="button" class="btn btn-outline" id="refreshDataFilesBtn">بازخوانی فایل‌ها</button>
+    <button type="button" class="btn btn-outline" id="newDataFileBtn">JSON جدید</button>
+    <div class="data-source-status"><span class="file-status" id="fileStatus"><span class="dot off"></span> پوشه Data یا فایل JSON انتخاب نشده است</span></div>
+  </div>
 
   <!-- جستجو -->
   <div class="search-bar">
@@ -534,6 +605,10 @@
     <div class="modal">
       <h2 id="modalTitle">افزودن فایل</h2>
       <form id="meetingForm">
+        <div class="form-group" id="targetJsonGroup" style="display:none;">
+          <label for="targetJsonFile">فایل JSON مقصد</label>
+          <select id="targetJsonFile" style="width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:10px;font-family:inherit;background:#fff;"></select>
+        </div>
         <div class="modal-top-actions">
           <button type="submit" class="btn btn-success" id="saveMeetingBtn">ذخیره</button>
           <button type="button" class="btn btn-danger" id="cancelModalBtn">انصراف</button>
@@ -569,8 +644,7 @@
           <label>تگ‌ها (Enter یا ویرگول)</label>
           <div class="tag-input-area" id="tagArea">
             <div id="tagChips" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
-            <input type="text" id="tagInput" list="tagSuggestions" placeholder="تگ جدید ...">
-            <datalist id="tagSuggestions"></datalist>
+            <input type="text" id="tagInput" placeholder="تگ جدید ...">
           </div>
         </div>
         <div class="form-group">
@@ -595,6 +669,7 @@
 
   <!-- Toast -->
   <div class="toast" id="toast"></div>
+  <div class="tag-autocomplete-menu" id="tagAutocompleteMenu"></div>
 </div>
 
 <script>
@@ -602,85 +677,173 @@
     // ------------------------------------------------------------
     //  jsonDatabaseService
     // ------------------------------------------------------------
-    const jsonDatabaseService = {
-      fileHandle: null,
+    function setCookie(name, value, days = 365) {
+      const expires = new Date(Date.now() + days * 86400000).toUTCString();
+      document.cookie = encodeURIComponent(name) + '=' + encodeURIComponent(value) + '; expires=' + expires + '; path=/; SameSite=Lax';
+    }
 
-      async openFile() {
-        try {
-          const [handle] = await window.showOpenFilePicker({
-            types: [{
-              description: 'JSON',
-              accept: { 'application/json': ['.json'] }
-            }],
-            multiple: false
-          });
-          this.fileHandle = handle;
-          return await this.load();
-        } catch (e) {
-          if (e.name !== 'AbortError') {
-            showToast('خطا در باز کردن فایل', 'error');
-          }
-          return null;
-        }
+    function getCookie(name) {
+      const key = encodeURIComponent(name) + '=';
+      const item = document.cookie.split('; ').find(part => part.startsWith(key));
+      return item ? decodeURIComponent(item.slice(key.length)) : '';
+    }
+
+    const dataDirectoryStore = {
+      dbName: 'file-tagger-settings',
+      storeName: 'directory-handles',
+      key: 'data-directory',
+      openDb() {
+        return new Promise((resolve, reject) => {
+          const request = indexedDB.open(this.dbName, 3);
+          request.onupgradeneeded = () => {
+            const db = request.result;
+            if (!db.objectStoreNames.contains(this.storeName)) db.createObjectStore(this.storeName);
+          };
+          request.onsuccess = () => resolve(request.result);
+          request.onerror = () => reject(request.error);
+        });
       },
-
-      async createFile() {
-        try {
-          const handle = await window.showSaveFilePicker({
-            suggestedName: 'meetings.json',
-            types: [{
-              description: 'JSON',
-              accept: { 'application/json': ['.json'] }
-            }]
-          });
-          this.fileHandle = handle;
-          const initial = { version: 1, updatedAt: new Date().toISOString(), meetings: [] };
-          await this.save(initial);
-          return initial;
-        } catch (e) {
-          if (e.name !== 'AbortError') {
-            showToast('خطا در ساخت فایل', 'error');
-          }
-          return null;
-        }
+      async save(handle) {
+        const db = await this.openDb();
+        await new Promise((resolve, reject) => {
+          const tx = db.transaction(this.storeName, 'readwrite');
+          tx.objectStore(this.storeName).put(handle, this.key);
+          tx.oncomplete = resolve;
+          tx.onerror = () => reject(tx.error);
+        });
+        db.close();
       },
-
       async load() {
-        if (!this.fileHandle) throw new Error('فایل انتخاب نشده');
-        const file = await this.fileHandle.getFile();
-        const text = await file.text();
-        if (!text.trim()) {
-          return { version: 1, updatedAt: '', meetings: [] };
-        }
-        try {
-          const data = JSON.parse(text);
-          if (!data || !Array.isArray(data.meetings)) {
-            throw new Error('ساختار JSON نامعتبر');
-          }
-          return data;
-        } catch (e) {
-          throw new Error('فایل JSON خراب یا نامعتبر است');
-        }
-      },
-
-      async save(data) {
-        if (!this.fileHandle) throw new Error('فایل انتخاب نشده');
-        data.updatedAt = new Date().toISOString();
-        if (!data.version) data.version = 1;
-        if (!Array.isArray(data.meetings)) data.meetings = [];
-        const writable = await this.fileHandle.createWritable();
-        await writable.write(JSON.stringify(data, null, 2));
-        await writable.close();
-      },
-
-      async close() {
-        this.fileHandle = null;
+        const db = await this.openDb();
+        const value = await new Promise((resolve, reject) => {
+          const tx = db.transaction(this.storeName, 'readonly');
+          const request = tx.objectStore(this.storeName).get(this.key);
+          request.onsuccess = () => resolve(request.result || null);
+          request.onerror = () => reject(request.error);
+        });
+        db.close();
+        return value;
       }
     };
 
-    // ------------------------------------------------------------
-    //  State
-    // ------------------------------------------------------------
+    const jsonDatabaseService = {
+      directoryHandle: null,
+      fileHandle: null,
+      files: [],
+      cache: new Map(),
+
+      async chooseDataDirectory() {
+        const handle = await window.showDirectoryPicker({ id: 'file-tagger-data-folder', mode: 'readwrite' });
+        this.directoryHandle = handle;
+        await dataDirectoryStore.save(handle);
+        return await this.scanJsonFiles();
+      },
+
+      async restoreDataDirectory(requestPermission = false) {
+        const handle = await dataDirectoryStore.load();
+        if (!handle) return { restored: false, needsPermission: false };
+        let permission = await handle.queryPermission({ mode: 'readwrite' });
+        if (permission !== 'granted' && requestPermission) permission = await handle.requestPermission({ mode: 'readwrite' });
+        this.directoryHandle = handle;
+        if (permission !== 'granted') return { restored: false, needsPermission: true, handle };
+        await this.scanJsonFiles();
+        return { restored: true, needsPermission: false, handle };
+      },
+
+      async scanJsonFiles() {
+        if (!this.directoryHandle) throw new Error('پوشه Data انتخاب نشده است');
+        const files = [];
+        for await (const [name, handle] of this.directoryHandle.entries()) {
+          if (handle.kind === 'file' && name.toLowerCase().endsWith('.json')) files.push({ name, handle });
+        }
+        files.sort((a, b) => a.name.localeCompare(b.name, 'fa'));
+        this.files = files;
+        return files;
+      },
+
+      async loadFileByName(name) {
+        const item = this.files.find(x => x.name === name);
+        if (!item) throw new Error('فایل JSON پیدا نشد: ' + name);
+        const file = await item.handle.getFile();
+        const text = await file.text();
+        const data = text.trim() ? JSON.parse(text) : {};
+        if (!Array.isArray(data.meetings)) data.meetings = [];
+        if (!Array.isArray(data.categories)) data.categories = [];
+        data.version = Math.max(Number(data.version) || 1, 2);
+        this.cache.set(name, data);
+        return data;
+      },
+
+      async saveFileByName(name, data) {
+        const item = this.files.find(x => x.name === name);
+        if (!item) throw new Error('فایل JSON پیدا نشد: ' + name);
+        data.updatedAt = new Date().toISOString();
+        if (!Array.isArray(data.meetings)) data.meetings = [];
+        if (!Array.isArray(data.categories)) data.categories = [];
+        data.version = Math.max(Number(data.version) || 1, 2);
+        const writable = await item.handle.createWritable();
+        await writable.write(JSON.stringify(data, null, 2));
+        await writable.close();
+        this.cache.set(name, data);
+      },
+
+      async loadAllFiles() {
+        const combined = { version: 2, updatedAt: '', categories: [], meetings: [] };
+        this.cache.clear();
+        for (const item of this.files) {
+          try {
+            const data = await this.loadFileByName(item.name);
+            data.meetings.forEach(record => combined.meetings.push({ ...record, __sourceFile: item.name }));
+          } catch (err) {
+            console.warn('Could not load', item.name, err);
+          }
+        }
+        return combined;
+      },
+
+      async selectFile(name) {
+        if (!this.directoryHandle) throw new Error('پوشه Data انتخاب نشده است');
+        const item = this.files.find(x => x.name === name);
+        this.fileHandle = item ? item.handle : await this.directoryHandle.getFileHandle(name);
+        setCookie('fileTaggerLastDataFile', name);
+        return await this.load();
+      },
+
+      async createFile(name) {
+        if (!this.directoryHandle) throw new Error('ابتدا پوشه Data را انتخاب کنید');
+        const safeName = name.toLowerCase().endsWith('.json') ? name : name + '.json';
+        const handle = await this.directoryHandle.getFileHandle(safeName, { create: true });
+        this.fileHandle = handle;
+        const initial = { version: 2, updatedAt: new Date().toISOString(), categories: [], meetings: [] };
+        await this.save(initial);
+        await this.scanJsonFiles();
+        setCookie('fileTaggerLastDataFile', safeName);
+        return { name: safeName, data: initial };
+      },
+
+      async load() {
+        if (!this.fileHandle) throw new Error('فایل JSON انتخاب نشده است');
+        const file = await this.fileHandle.getFile();
+        const text = await file.text();
+        const data = text.trim() ? JSON.parse(text) : {};
+        if (!Array.isArray(data.meetings)) data.meetings = [];
+        if (!Array.isArray(data.categories)) data.categories = [];
+        data.version = Math.max(Number(data.version) || 1, 2);
+        return data;
+      },
+
+      async save(data) {
+        if (!this.fileHandle) throw new Error('فایل JSON انتخاب نشده است');
+        data.updatedAt = new Date().toISOString();
+        if (!Array.isArray(data.meetings)) data.meetings = [];
+        if (!Array.isArray(data.categories)) data.categories = [];
+        data.version = Math.max(Number(data.version) || 1, 2);
+        const writable = await this.fileHandle.createWritable();
+        await writable.write(JSON.stringify(data, null, 2));
+        await writable.close();
+      }
+    };
+
     let dbData = { version: 1, updatedAt: '', meetings: [] };
     let currentFilter = 'all';
     let editingId = null;
@@ -713,13 +876,29 @@
     const description = $('description');
     const tagInput = $('tagInput');
     const tagChips = $('tagChips');
-    const tagSuggestions = $('tagSuggestions');
     const participants = $('participants');
     const modalTitle = $('modalTitle');
+    const dataFileSelect = $('dataFileSelect');
+    const targetJsonFile = $('targetJsonFile');
+    const targetJsonGroup = $('targetJsonGroup');
 
     // ------------------------------------------------------------
     //  Helpers
     // ------------------------------------------------------------
+
+    function renderDataFileOptions(selectedName = '') {
+      dataFileSelect.innerHTML = '<option value="">فایل JSON انتخاب نشده</option><option value="__all__">همه فایل‌های JSON</option>' + jsonDatabaseService.files.map(item => `<option value="${escapeHtml(item.name)}">${escapeHtml(item.name)}</option>`).join('');
+      dataFileSelect.value = selectedName || '';
+    }
+
+    async function loadSelectedDataFile(name) {
+      if (!name) return;
+      dbData = name === '__all__' ? await jsonDatabaseService.loadAllFiles() : await jsonDatabaseService.selectFile(name);
+      fileStatus.innerHTML = name === '__all__' ? '<span class="dot"></span> نمایش همه فایل‌های JSON' : `<span class="dot"></span> فایل داده فعال: ${escapeHtml(name)}`;
+      document.getElementById('openFileBtn').style.display = 'none';
+      render();
+      showToast('فایل داده بارگذاری شد');
+    }
 
     function getAllKnownTags() {
       const values = new Set();
@@ -730,14 +909,82 @@
       return [...values].sort((a, b) => a.localeCompare(b, 'fa'));
     }
 
-    function refreshTagSuggestions() {
+    let activeTagInput = null;
+    let activeSuggestionIndex = -1;
+    const tagAutocompleteMenu = $('tagAutocompleteMenu');
+
+    function getFilteredTagSuggestions(input) {
+      const query = String(input.value || '').trim().toLocaleLowerCase('fa');
+      return getAllKnownTags().filter(tag => !query || tag.toLocaleLowerCase('fa').includes(query)).slice(0, 12);
+    }
+
+    function hideTagAutocomplete() {
+      tagAutocompleteMenu.classList.remove('show');
+      tagAutocompleteMenu.replaceChildren();
+      activeSuggestionIndex = -1;
+      activeTagInput = null;
+    }
+
+    function positionTagAutocomplete(input) {
+      const rect = input.getBoundingClientRect();
+      tagAutocompleteMenu.style.width = Math.max(rect.width, 180) + 'px';
+      tagAutocompleteMenu.style.right = Math.max(8, window.innerWidth - rect.right) + 'px';
+      tagAutocompleteMenu.style.left = 'auto';
+      tagAutocompleteMenu.style.top = Math.min(window.innerHeight - 230, rect.bottom + 6) + 'px';
+    }
+
+    function showTagAutocomplete(input) {
+      const suggestions = getFilteredTagSuggestions(input);
+      if (!suggestions.length) { hideTagAutocomplete(); return; }
+      activeTagInput = input;
+      activeSuggestionIndex = -1;
       const fragment = document.createDocumentFragment();
-      getAllKnownTags().forEach(tag => {
-        const option = document.createElement('option');
-        option.value = tag;
-        fragment.appendChild(option);
+      suggestions.forEach(tag => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'tag-autocomplete-item';
+        button.textContent = tag;
+        button.addEventListener('mousedown', event => {
+          event.preventDefault();
+          input.value = tag;
+          hideTagAutocomplete();
+          input.focus();
+        });
+        fragment.appendChild(button);
       });
-      tagSuggestions.replaceChildren(fragment);
+      tagAutocompleteMenu.replaceChildren(fragment);
+      positionTagAutocomplete(input);
+      tagAutocompleteMenu.classList.add('show');
+    }
+
+    function bindTagAutocomplete(input) {
+      if (!input || input.dataset.autocompleteBound === '1') return;
+      input.dataset.autocompleteBound = '1';
+      input.addEventListener('focus', () => showTagAutocomplete(input));
+      input.addEventListener('input', () => showTagAutocomplete(input));
+      input.addEventListener('keydown', event => {
+        const items = [...tagAutocompleteMenu.querySelectorAll('.tag-autocomplete-item')];
+        if (!tagAutocompleteMenu.classList.contains('show') || !items.length) return;
+        if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+          event.preventDefault();
+          activeSuggestionIndex = event.key === 'ArrowDown'
+            ? (activeSuggestionIndex + 1) % items.length
+            : (activeSuggestionIndex - 1 + items.length) % items.length;
+          items.forEach((item, index) => item.classList.toggle('active', index === activeSuggestionIndex));
+        } else if (event.key === 'Enter' && activeSuggestionIndex >= 0) {
+          event.preventDefault();
+          input.value = items[activeSuggestionIndex].textContent;
+          hideTagAutocomplete();
+        } else if (event.key === 'Escape') {
+          hideTagAutocomplete();
+        }
+      });
+    }
+
+    function refreshTagSuggestions() {
+      bindTagAutocomplete(tagInput);
+      document.querySelectorAll('.quick-tag-input').forEach(bindTagAutocomplete);
+      if (activeTagInput && document.body.contains(activeTagInput)) showTagAutocomplete(activeTagInput);
     }
 
     function getFolderPath(filePath) {      const path = String(filePath || '').trim().split('/').join('\\');
@@ -934,8 +1181,9 @@
               <span>📏 ${size}</span>
             </div>
             ${m.project ? `<div style="font-size:0.8rem;color:#2563eb;">🏷️ ${escapeHtml(m.project)}</div>` : ''}
+            ${m.__sourceFile ? `<div style="font-size:.75rem;color:#64748b;margin-top:4px;">منبع: ${escapeHtml(m.__sourceFile)}</div>` : ''}
             ${desc ? `<div class="card-desc">${desc}</div>` : ''}
-            <div class="card-tag-manager">${tags}<span class="quick-tag-wrap"><input class="quick-tag-input" data-id="${escapeHtml(m.id)}" list="tagSuggestions" placeholder="تگ جدید"><button type="button" class="quick-tag-add" data-id="${escapeHtml(m.id)}">+</button></span></div>
+            <div class="card-tag-manager">${tags}<span class="quick-tag-wrap"><input class="quick-tag-input" data-id="${escapeHtml(m.id)}" placeholder="تگ جدید"><button type="button" class="quick-tag-add" data-id="${escapeHtml(m.id)}">+</button></span></div>
             ${participantsList ? `<div style="display:flex;flex-wrap:wrap;gap:4px;margin:4px 0;">${participantsList}</div>` : ''}
             <div class="card-actions">
               <button class="btn-icon edit-btn" data-id="${escapeHtml(m.id)}">✏️ ویرایش</button>
@@ -947,6 +1195,7 @@
         `;
       });
       meetingListEl.innerHTML = html;
+      refreshTagSuggestions();
 
       // اتصال رویدادها
       document.querySelectorAll('.edit-btn').forEach(btn => {
@@ -989,8 +1238,41 @@
       });
 
       document.querySelectorAll('.open-btn').forEach(btn => {
-        btn.onclick = () => { showToast('عملکرد باز کردن فایل در نسخه بعدی اضافه می‌شود', 'success'); };
+        btn.onclick = async () => {
+          const item = dbData.meetings.find(x => x.id === btn.dataset.id);
+          await openFileLocation(item);
+        };
       });
+    }
+
+    function getSourceFileName(item) {
+      return item && item.__sourceFile ? item.__sourceFile : dataFileSelect.value;
+    }
+
+    async function persistSourceItem(item) {
+      const source = getSourceFileName(item);
+      if (!source || source === '__all__') throw new Error('فایل منبع مشخص نیست');
+      const sourceData = jsonDatabaseService.cache.get(source) || await jsonDatabaseService.loadFileByName(source);
+      const cleanItem = { ...item };
+      delete cleanItem.__sourceFile;
+      const index = sourceData.meetings.findIndex(x => x.id === item.id);
+      if (index >= 0) sourceData.meetings[index] = cleanItem;
+      else sourceData.meetings.push(cleanItem);
+      await jsonDatabaseService.saveFileByName(source, sourceData);
+    }
+
+    async function deleteSourceItem(item) {
+      const source = getSourceFileName(item);
+      if (!source || source === '__all__') throw new Error('فایل منبع مشخص نیست');
+      const sourceData = jsonDatabaseService.cache.get(source) || await jsonDatabaseService.loadFileByName(source);
+      sourceData.meetings = sourceData.meetings.filter(x => x.id !== item.id);
+      await jsonDatabaseService.saveFileByName(source, sourceData);
+    }
+
+    async function refreshCurrentView() {
+      const selected = dataFileSelect.value;
+      dbData = selected === '__all__' ? await jsonDatabaseService.loadAllFiles() : await jsonDatabaseService.selectFile(selected);
+      render();
     }
 
     async function addTagFromCard(id, rawTag) {
@@ -1005,7 +1287,7 @@
       }
       item.tags.push(tag);
       item.updatedAt = new Date().toISOString();
-      try { await jsonDatabaseService.save(dbData); refreshTagSuggestions(); showToast('تگ اضافه شد'); render(); }
+      try { await persistSourceItem(item); await refreshCurrentView(); refreshTagSuggestions(); showToast('تگ اضافه شد'); }
       catch (err) { item.tags = item.tags.filter(t => t !== tag); showToast('خطا در ذخیره تگ', 'error'); }
     }
 
@@ -1015,7 +1297,7 @@
       const previous = [...(item.tags || [])];
       item.tags = previous.filter(t => t !== tag);
       item.updatedAt = new Date().toISOString();
-      try { await jsonDatabaseService.save(dbData); refreshTagSuggestions(); showToast('تگ حذف شد'); render(); }
+      try { await persistSourceItem(item); await refreshCurrentView(); refreshTagSuggestions(); showToast('تگ حذف شد'); }
       catch (err) { item.tags = previous; showToast('خطا در حذف تگ', 'error'); }
     }
 
@@ -1028,6 +1310,11 @@
         return;
       }
       editingId = meeting ? meeting.id : null;
+      const allMode = dataFileSelect.value === '__all__';
+      targetJsonGroup.style.display = allMode ? 'block' : 'none';
+      targetJsonFile.innerHTML = jsonDatabaseService.files.map(item => `<option value="${escapeHtml(item.name)}">${escapeHtml(item.name)}</option>`).join('');
+      targetJsonFile.value = meeting && meeting.__sourceFile ? meeting.__sourceFile : (allMode ? (jsonDatabaseService.files[0]?.name || '') : dataFileSelect.value);
+      targetJsonFile.disabled = !!meeting;
       currentTags = meeting ? [...(meeting.tags || [])] : [];
       modalTitle.textContent = meeting ? 'ویرایش فایل' : 'افزودن فایل';
 
@@ -1155,17 +1442,13 @@
         project: project.value.trim(),
         participants: participantsArr,
         createdAt: existing ? existing.createdAt : new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
+        __sourceFile: existing && existing.__sourceFile ? existing.__sourceFile : (dataFileSelect.value === '__all__' ? targetJsonFile.value : dataFileSelect.value)
       };
 
       try {
-        if (editingId) {
-          const idx = dbData.meetings.findIndex(m => m.id === editingId);
-          if (idx !== -1) dbData.meetings[idx] = meetingData;
-        } else {
-          dbData.meetings.push(meetingData);
-        }
-        await jsonDatabaseService.save(dbData);
+        await persistSourceItem(meetingData);
+        await refreshCurrentView();
         showToast('فایل ذخیره شد');
         closeModal();
         render();
@@ -1188,8 +1471,10 @@
     document.getElementById('confirmDeleteBtn').addEventListener('click', async () => {
       if (!deleteTargetId) return;
       try {
-        dbData.meetings = dbData.meetings.filter(m => m.id !== deleteTargetId);
-        await jsonDatabaseService.save(dbData);
+        const item = dbData.meetings.find(m => m.id === deleteTargetId);
+        if (!item) throw new Error('رکورد پیدا نشد');
+        await deleteSourceItem(item);
+        await refreshCurrentView();
         showToast('فایل حذف شد');
         deleteTargetId = null;
         confirmModal.classList.remove('open');
@@ -1226,36 +1511,49 @@
     document.getElementById('emptyAddBtn') && document.getElementById('emptyAddBtn').addEventListener('click', () => openForm());
 
     // انتخاب فایل اطلاعات
-    document.getElementById('openFileBtn').addEventListener('click', async () => {
-      try {
-        const data = await jsonDatabaseService.openFile();
-        if (data) {
-          dbData = data;
-          fileStatus.innerHTML = `<span class="dot"></span> فایل اطلاعات متصل است: ${jsonDatabaseService.fileHandle.name}`;
-          render();
-          showToast('فایل اطلاعات بارگذاری شد');
-        }
-      } catch (err) {
-        showToast('خطا: ' + err.message, 'error');
-      }
-    });
-
-    // ساخت فایل جدید
-    document.getElementById('createFileBtn').addEventListener('click', async () => {
-      try {
-        const data = await jsonDatabaseService.createFile();
-        if (data) {
-          dbData = data;
-          fileStatus.innerHTML = `<span class="dot"></span> فایل اطلاعات متصل است: ${jsonDatabaseService.fileHandle.name}`;
-          render();
-          showToast('فایل جدید ساخته شد');
-        }
-      } catch (err) {
-        showToast('خطا: ' + err.message, 'error');
-      }
-    });
+    document.getElementById('openFileBtn').addEventListener('click', () => document.getElementById('chooseDataFolderBtn').click());
 
     // پشتیبان
+    document.getElementById('chooseDataFolderBtn').addEventListener('click', async () => {
+      try {
+        await jsonDatabaseService.chooseDataDirectory();
+        renderDataFileOptions();
+        fileStatus.innerHTML = '<span class="dot"></span> پوشه Data متصل است';
+        showToast('پوشه Data انتخاب شد');
+      } catch (err) {
+        if (err.name !== 'AbortError') showToast('خطا: ' + err.message, 'error');
+      }
+    });
+
+    document.getElementById('refreshDataFilesBtn').addEventListener('click', async () => {
+      try {
+        if (!jsonDatabaseService.directoryHandle) {
+          const restored = await jsonDatabaseService.restoreDataDirectory(true);
+          if (!restored.restored) return;
+        }
+        await jsonDatabaseService.scanJsonFiles();
+        renderDataFileOptions(dataFileSelect.value);
+        showToast('فهرست فایل‌های JSON به‌روزرسانی شد');
+      } catch (err) { showToast('خطا: ' + err.message, 'error'); }
+    });
+
+    document.getElementById('newDataFileBtn').addEventListener('click', async () => {
+      try {
+        const name = prompt('نام فایل JSON جدید:');
+        if (!name || !name.trim()) return;
+        const result = await jsonDatabaseService.createFile(name.trim());
+        renderDataFileOptions(result.name);
+        dbData = result.data;
+        fileStatus.innerHTML = `<span class="dot"></span> فایل داده فعال: ${escapeHtml(result.name)}`;
+        render();
+      } catch (err) { showToast('خطا: ' + err.message, 'error'); }
+    });
+
+    dataFileSelect.addEventListener('change', async () => {
+      try { setCookie('fileTaggerLastDataFile', dataFileSelect.value); await loadSelectedDataFile(dataFileSelect.value); }
+      catch (err) { showToast('خطا در بارگذاری فایل: ' + err.message, 'error'); }
+    });
+
     document.getElementById('backupBtn').addEventListener('click', async () => {
       if (!jsonDatabaseService.fileHandle) {
         showToast('ابتدا فایل اطلاعات را انتخاب کنید', 'error');
@@ -1263,10 +1561,10 @@
       }
       try {
         const handle = await window.showSaveFilePicker({
-          suggestedName: `meetings-backup-${new Date().toISOString().slice(0,10)}-${new Date().toTimeString().slice(0,5).replace(':','-')}.json`,
+          suggestedName: `${dataFileSelect.value === '__all__' ? 'all-json-backup' : 'meetings-backup'}-${new Date().toISOString().slice(0,10)}-${new Date().toTimeString().slice(0,5).replace(':','-')}.json`,
           types: [{ description: 'JSON', accept: { 'application/json': ['.json'] } }]
         });
-        const data = await jsonDatabaseService.load();
+        const data = dataFileSelect.value === '__all__' ? dbData : await jsonDatabaseService.load();
         const writable = await handle.createWritable();
         await writable.write(JSON.stringify(data, null, 2));
         await writable.close();
@@ -1279,9 +1577,32 @@
     // ------------------------------------------------------------
     //  مقداردهی اولیه
     // ------------------------------------------------------------
-    render();
-    // پیام خوش‌آمد
-    showToast('لطفاً فایل meetings.json را انتخاب کنید', 'success');
+    async function initializeApp() {
+      bindTagAutocomplete(tagInput);
+      const restored = await jsonDatabaseService.restoreDataDirectory(false);
+      if (restored.restored) {
+        renderDataFileOptions();
+        const lastFile = getCookie('fileTaggerLastDataFile');
+        if (lastFile && jsonDatabaseService.files.some(x => x.name === lastFile)) {
+          dataFileSelect.value = lastFile;
+          await loadSelectedDataFile(lastFile);
+          return;
+        }
+        fileStatus.innerHTML = '<span class="dot"></span> پوشه Data متصل است؛ یک فایل JSON انتخاب کنید';
+      } else if (restored.needsPermission) {
+        fileStatus.innerHTML = '<span class="dot off"></span> پوشه Data قبلی شناسایی شد؛ برای اتصال مجدد کلیک کنید';
+        document.getElementById('chooseDataFolderBtn').textContent = 'اتصال مجدد پوشه Data';
+      }
+      render();
+    }
+
+    document.addEventListener('click', event => {
+      if (!tagAutocompleteMenu.contains(event.target) && event.target !== activeTagInput) hideTagAutocomplete();
+    });
+    window.addEventListener('resize', () => activeTagInput && positionTagAutocomplete(activeTagInput));
+    window.addEventListener('scroll', () => activeTagInput && positionTagAutocomplete(activeTagInput), true);
+
+    initializeApp();
   })();
 </script>
   <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>

@@ -569,7 +569,8 @@
           <label>تگ‌ها (Enter یا ویرگول)</label>
           <div class="tag-input-area" id="tagArea">
             <div id="tagChips" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
-            <input type="text" id="tagInput" placeholder="تگ جدید ...">
+            <input type="text" id="tagInput" list="tagSuggestions" placeholder="تگ جدید ...">
+            <datalist id="tagSuggestions"></datalist>
           </div>
         </div>
         <div class="form-group">
@@ -712,12 +713,68 @@
     const description = $('description');
     const tagInput = $('tagInput');
     const tagChips = $('tagChips');
+    const tagSuggestions = $('tagSuggestions');
     const participants = $('participants');
     const modalTitle = $('modalTitle');
 
     // ------------------------------------------------------------
     //  Helpers
     // ------------------------------------------------------------
+
+    function getAllKnownTags() {
+      const values = new Set();
+      dbData.meetings.forEach(item => (item.tags || []).forEach(tag => {
+        const value = String(tag || '').trim();
+        if (value) values.add(value);
+      }));
+      return [...values].sort((a, b) => a.localeCompare(b, 'fa'));
+    }
+
+    function refreshTagSuggestions() {
+      const fragment = document.createDocumentFragment();
+      getAllKnownTags().forEach(tag => {
+        const option = document.createElement('option');
+        option.value = tag;
+        fragment.appendChild(option);
+      });
+      tagSuggestions.replaceChildren(fragment);
+    }
+
+    function getFolderPath(filePath) {      const path = String(filePath || '').trim().split('/').join('\\');
+      if (!path) return '';
+      const lastSlash = path.lastIndexOf('\\');
+      return lastSlash > 1 ? path.slice(0, lastSlash) : path;
+    }
+
+    function toFileUrl(folderPath) {
+      const normalized = folderPath.replace(/\\/g, '/');
+      if (normalized.startsWith('//')) return 'file:' + encodeURI(normalized);
+      return 'file:///' + encodeURI(normalized);
+    }
+
+    async function openFileLocation(item) {
+      const folderPath = getFolderPath(item && item.filePath);
+      if (!folderPath) {
+        showToast('مسیر فایل ثبت نشده است', 'error');
+        return;
+      }
+
+      try {
+        const opened = window.open(toFileUrl(folderPath), '_blank', 'noopener');
+        if (opened) {
+          showToast('مسیر پوشه باز شد');
+          return;
+        }
+      } catch (_) {}
+
+      try {
+        await navigator.clipboard.writeText(folderPath);
+        showToast('مرورگر اجازه باز کردن Explorer نداد؛ مسیر پوشه کپی شد', 'error');
+      } catch (_) {
+        showToast('مسیر پوشه: ' + folderPath, 'error');
+      }
+    }
+
     function generateUUID() {
       return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
         const r = Math.random() * 16 | 0;
@@ -878,13 +935,13 @@
             </div>
             ${m.project ? `<div style="font-size:0.8rem;color:#2563eb;">🏷️ ${escapeHtml(m.project)}</div>` : ''}
             ${desc ? `<div class="card-desc">${desc}</div>` : ''}
-            <div class="card-tag-manager">${tags}<span class="quick-tag-wrap"><input class="quick-tag-input" data-id="${escapeHtml(m.id)}" placeholder="تگ جدید"><button type="button" class="quick-tag-add" data-id="${escapeHtml(m.id)}">+</button></span></div>
+            <div class="card-tag-manager">${tags}<span class="quick-tag-wrap"><input class="quick-tag-input" data-id="${escapeHtml(m.id)}" list="tagSuggestions" placeholder="تگ جدید"><button type="button" class="quick-tag-add" data-id="${escapeHtml(m.id)}">+</button></span></div>
             ${participantsList ? `<div style="display:flex;flex-wrap:wrap;gap:4px;margin:4px 0;">${participantsList}</div>` : ''}
             <div class="card-actions">
               <button class="btn-icon edit-btn" data-id="${escapeHtml(m.id)}">✏️ ویرایش</button>
               <button class="btn-icon delete-btn" data-id="${escapeHtml(m.id)}">🗑️ حذف</button>
               <button class="btn-icon copy-btn" data-id="${escapeHtml(m.id)}">📋 کپی مسیر</button>
-              <button class="btn-icon open-btn" data-id="${escapeHtml(m.id)}">📂 باز کردن</button>
+              <button class="btn-icon open-btn" data-id="${escapeHtml(m.id)}">📂 باز کردن محل فایل</button>
             </div>
           </div>
         `;
@@ -948,7 +1005,7 @@
       }
       item.tags.push(tag);
       item.updatedAt = new Date().toISOString();
-      try { await jsonDatabaseService.save(dbData); showToast('تگ اضافه شد'); render(); }
+      try { await jsonDatabaseService.save(dbData); refreshTagSuggestions(); showToast('تگ اضافه شد'); render(); }
       catch (err) { item.tags = item.tags.filter(t => t !== tag); showToast('خطا در ذخیره تگ', 'error'); }
     }
 
@@ -958,7 +1015,7 @@
       const previous = [...(item.tags || [])];
       item.tags = previous.filter(t => t !== tag);
       item.updatedAt = new Date().toISOString();
-      try { await jsonDatabaseService.save(dbData); showToast('تگ حذف شد'); render(); }
+      try { await jsonDatabaseService.save(dbData); refreshTagSuggestions(); showToast('تگ حذف شد'); render(); }
       catch (err) { item.tags = previous; showToast('خطا در حذف تگ', 'error'); }
     }
 
